@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from utils.inc_net import IncrementalNet,SimpleCosineIncrementalNet,SimpleVitNet
 from models.base import BaseLearner
 from utils.toolkit import target2onehot, tensor2numpy
-
+from torchvision.transforms import v2
 
 num_workers = 8
 batch_size=128
@@ -20,6 +20,11 @@ class Learner(BaseLearner):
         super().__init__(args)
         self._network = SimpleVitNet(args, True)
         self.args=args
+        self._trsf = v2.Compose(
+            [
+                v2.RandomHorizontalFlip(p=0.5)
+            ]
+        )
 
     def after_task(self):
         self._known_classes = self._total_classes
@@ -49,6 +54,8 @@ class Learner(BaseLearner):
             self._network.fc.weight.data[class_index]=proto
         return model
 
+    def set_trsf(self, trsf):
+        self._trsf = trsf
    
     def incremental_train(self, data_manager):
         self._cur_task += 1
@@ -57,7 +64,10 @@ class Learner(BaseLearner):
         logging.info("Learning on {}-{}".format(self._known_classes, self._total_classes))
 
         train_dataset = data_manager.get_dataset(np.arange(self._known_classes, self._total_classes),source="train", mode="train", )
-        self.train_dataset=train_dataset
+        train_dataset_aug = data_manager.get_dataset(np.arange(self._known_classes, self._total_classes),source="train", mode="train", m_enable_trsf=True,m_augmentation_trsf=self._trsf)
+
+        self.train_dataset=torch.utils.data.ConcatDataset([train_dataset, train_dataset_aug])
+
         self.data_manager=data_manager
         self.train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
         test_dataset = data_manager.get_dataset(np.arange(0, self._total_classes), source="test", mode="test" )
@@ -78,7 +88,7 @@ class Learner(BaseLearner):
         self._network.to(self._device)
         self.replace_fc(train_loader_for_protonet, self._network, None)
 
-        
+
     
 
    

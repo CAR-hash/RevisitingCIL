@@ -2,6 +2,7 @@ import json
 import argparse
 from trainer import train
 
+
 def main():
     args = setup_parser().parse_args()
     param = load_json(args.config)

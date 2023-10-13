@@ -29,7 +29,7 @@ class DataManager(object):
         return len(self._class_order)
 
     def get_dataset(
-        self, indices, source, mode, appendent=None, ret_data=False, m_rate=None
+        self, indices, source, mode, appendent=None, ret_data=False, m_rate=None, m_enable_trsf=False, m_augmentation_trsf=None
     ):
         if source == "train":
             x, y = self._train_data, self._train_targets
@@ -52,6 +52,9 @@ class DataManager(object):
             trsf = transforms.Compose([*self._test_trsf, *self._common_trsf])
         else:
             raise ValueError("Unknown mode {}.".format(mode))
+
+        if m_enable_trsf:
+            trsf = transforms.Compose([trsf, m_augmentation_trsf])
 
         data, targets = [], []
         for idx in indices:
