@@ -29,7 +29,7 @@ class DataManager(object):
         return len(self._class_order)
 
     def get_dataset(
-        self, indices, source, mode, appendent=None, ret_data=False, m_rate=None, m_enable_trsf=False, m_augmentation_trsf=None
+        self, indices, source, mode, appendent=None, ret_data=False, m_rate=None
     ):
         if source == "train":
             x, y = self._train_data, self._train_targets
@@ -40,6 +40,13 @@ class DataManager(object):
 
         if mode == "train":
             trsf = transforms.Compose([*self._train_trsf, *self._common_trsf])
+            ttrsf = transforms.Compose(
+                [
+                    *self._test_trsf,
+                    transforms.RandomHorizontalFlip(p=1.0),
+                    *self._common_trsf,
+                ]
+            )
         elif mode == "flip":
             trsf = transforms.Compose(
                 [
@@ -74,9 +81,9 @@ class DataManager(object):
         data, targets = np.concatenate(data), np.concatenate(targets)
 
         if ret_data:
-            return data, targets, DummyDataset(data, targets, trsf, self.use_path)
+            return data, targets, AugmentedDummyDataset(data, targets, trsf, self.use_path)
         else:
-            return DummyDataset(data, targets, trsf, self.use_path)
+            return AugmentedDummyDataset(data, targets, trsf, self.use_path)
 
     def get_dataset_with_split(
         self, indices, source, mode, appendent=None, val_samples_per_class=0
@@ -216,16 +223,16 @@ class AugmentedDummyDataset(DummyDataset):
         self.addition_trsf = transforms.Compose([trsf, addition_trsf])
         self.use_path = use_path
         self.dataset_size = len(images)*2
-        self.origin_data_size = len(images)
+        self.origin_dataset_size = len(images)
 
     def __len__(self):
         return len(self.images)
 
     def __getitem__(self, logic_idx):
         ttrsf = self.trsf
-        if logic_idx/self.dataset_size > 0:
+        if logic_idx/self.origin_dataset_size > 0:
             ttrsf = self.addition_trsf
-        idx = logic_idx % self.dataset_size
+        idx = logic_idx % self.origin_dataset_size
 
         if self.use_path:
             image = ttrsf(pil_loader(self.images[idx]))
