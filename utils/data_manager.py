@@ -38,11 +38,11 @@ class DataManager(object):
         else:
             raise ValueError("Unknown data source {}.".format(source))
 
-        addition_trsf = []
+        ttrsf = []
 
         if mode == "train":
             trsf = transforms.Compose([*self._train_trsf, *self._common_trsf])
-            addition_trsf = [
+            ttrsf = [
                 transforms.Compose(
                     [
                         *self._test_trsf,
@@ -85,9 +85,9 @@ class DataManager(object):
 
         if mode == "train":
             if ret_data:
-                return data, targets, MultiAugmentedDummyDataset(data, targets, trsf, addition_trsf, self.use_path)
+                return data, targets, MultiAugmentedDummyDataset(data, targets, trsf, ttrsf, self.use_path)
             else:
-                return MultiAugmentedDummyDataset(data, targets, trsf, addition_trsf, self.use_path)
+                return MultiAugmentedDummyDataset(data, targets, trsf, ttrsf, self.use_path)
         else:
             if ret_data:
                 return data, targets, DummyDataset(data, targets, trsf, self.use_path)
@@ -253,32 +253,32 @@ class AugmentedDummyDataset(DummyDataset):
         return logic_idx, image, label
 
 class MultiAugmentedDummyDataset(DummyDataset):
-    def __init__(self, images, labels, trsf, addition_trsf, use_path=False):
+    def __init__(self, images, labels, trsf, ttrsf, use_path=False):
         super().__init__(images, labels, trsf, use_path)
         assert len(images) == len(labels), "Data size error!"
         self.images = images
         self.labels = labels
-        for i in range(0, len(addition_trsf)):
+        for i in range(0, len(ttrsf)):
             self.labels = np.append(self.labels, labels)
         self.trsf = trsf
-        self.addition_trsf = addition_trsf
+        self.ttrsf = ttrsf
         self.use_path = use_path
-        self.dataset_size = len(images) * (len(addition_trsf) + 1)
+        self.dataset_size = len(images) * (len(ttrsf) + 1)
         self.origin_dataset_size = len(images)
 
     def __len__(self):
         return len(self.images)
 
     def __getitem__(self, logic_idx):
-        ttrsf = self.trsf
+        nttrsf = self.trsf
         if logic_idx >= self.origin_dataset_size:
             trsf_idx = int(logic_idx/self.origin_dataset_size)
-            ttrsf = self.addition_trsf[trsf_idx]
+            nttrsf = self.ttrsf[trsf_idx]
         idx = logic_idx % self.origin_dataset_size
         if self.use_path:
-            image = ttrsf(pil_loader(self.images[idx]))
+            image = nttrsf(pil_loader(self.images[idx]))
         else:
-            image = ttrsf(Image.fromarray(self.images[idx]))
+            image = nttrsf(Image.fromarray(self.images[idx]))
         label = self.labels[idx]
         return logic_idx, image, label
 
