@@ -38,16 +38,19 @@ class DataManager(object):
         else:
             raise ValueError("Unknown data source {}.".format(source))
 
+        addition_trsf = []
 
         if mode == "train":
             trsf = transforms.Compose([*self._train_trsf, *self._common_trsf])
-            ttrsf = transforms.Compose(
-                [
-                    *self._test_trsf,
-                    transforms.RandomResizedCrop(size=(224, 224), scale=(0.08, 1),ratio=(0.8, 1.2)),
-                    *self._common_trsf,
-                ]
-            )
+            addition_trsf = [
+                transforms.Compose(
+                    [
+                        *self._test_trsf,
+                        
+                        *self._common_trsf,
+                    ]
+                ),
+            ]
         elif mode == "flip":
             trsf = transforms.Compose(
                 [
@@ -56,10 +59,8 @@ class DataManager(object):
                     *self._common_trsf,
                 ]
             )
-            ttrsf = trsf
         elif mode == "test":
             trsf = transforms.Compose([*self._test_trsf, *self._common_trsf])
-            ttrsf = trsf
         else:
             raise ValueError("Unknown mode {}.".format(mode))
 
@@ -84,9 +85,9 @@ class DataManager(object):
         data, targets = np.concatenate(data), np.concatenate(targets)
 
         if ret_data:
-            return data, targets, AugmentedDummyDataset(data, targets, trsf, ttrsf, self.use_path)
+            return data, targets, MultiAugmentedDummyDataset(data, targets, trsf, addition_trsf, self.use_path)
         else:
-            return AugmentedDummyDataset(data, targets, trsf, ttrsf, self.use_path)
+            return MultiAugmentedDummyDataset(data, targets, trsf, addition_trsf, self.use_path)
 
     def get_dataset_with_split(
         self, indices, source, mode, appendent=None, val_samples_per_class=0
@@ -257,19 +258,18 @@ class MultiAugmentedDummyDataset(DummyDataset):
         self.trsf = trsf
         self.addition_trsf = addition_trsf
         self.use_path = use_path
-        self.dataset_size = len(images)
+        self.dataset_size = len(images) * (len(addition_trsf) + 1)
+        self.origin_dataset_size = len(images)
 
     def __len__(self):
         return len(self.images)
 
     def __getitem__(self, logic_idx):
         ttrsf = self.trsf
-        if logic_idx/self.dataset_size > 0:
-            ttrsf = transforms.Compose([
-                ttrsf,
-                self.addition_trsf[logic_idx/self.dataset_size]
-            ])
-        idx = logic_idx % self.dataset_size
+        if logic_idx/self.origin_dataset_size > 0:
+            ttrsf = self.addition_trsf[logic_idx/self.origin_dataset_size - 1]
+
+        idx = logic_idx % self.origin_dataset_size
         if self.use_path:
             image = ttrsf(pil_loader(self.images[idx]))
         else:
