@@ -266,10 +266,8 @@ class MultiAugmentedDummyDataset(DummyDataset):
     def __getitem__(self, logic_idx):
         ttrsf = self.trsf
 
-        logging.info("Trsf idx:{},{}".format(self.addition_trsf, logic_idx))
-
-        if logic_idx/self.origin_dataset_size > 0:
-            trsf_idx = int(logic_idx/self.origin_dataset_size) - 1
+        if (logic_idx - logic_idx%self.origin_dataset_size) > 0:
+            trsf_idx = int(logic_idx/self.origin_dataset_size)
             ttrsf = self.addition_trsf[trsf_idx]
 
         idx = logic_idx % self.origin_dataset_size
