@@ -44,7 +44,7 @@ class DataManager(object):
             ttrsf = transforms.Compose(
                 [
                     *self._test_trsf,
-                    transforms.RandomHorizontalFlip(p=0.6),
+                    transforms.RandomResizedCrop(size = (224, 224), scale = (0.75, 1), ratio = (0.8, 1.2))
                     *self._common_trsf,
                 ]
             )
