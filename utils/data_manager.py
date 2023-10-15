@@ -83,10 +83,16 @@ class DataManager(object):
 
         data, targets = np.concatenate(data), np.concatenate(targets)
 
-        if ret_data:
-            return data, targets, MultiAugmentedDummyDataset(data, targets, trsf, addition_trsf, self.use_path)
+        if mode == "train":
+            if ret_data:
+                return data, targets, MultiAugmentedDummyDataset(data, targets, trsf, addition_trsf, self.use_path)
+            else:
+                return MultiAugmentedDummyDataset(data, targets, trsf, addition_trsf, self.use_path)
         else:
-            return MultiAugmentedDummyDataset(data, targets, trsf, addition_trsf, self.use_path)
+            if ret_data:
+                return data, targets, DummyDataset(data, targets, trsf, self.use_path)
+            else:
+                return DummyDataset(data, targets, trsf, self.use_path)
 
     def get_dataset_with_split(
         self, indices, source, mode, appendent=None, val_samples_per_class=0
