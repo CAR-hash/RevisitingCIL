@@ -46,7 +46,6 @@ class DataManager(object):
                 transforms.Compose(
                     [
                         *self._test_trsf,
-
                         *self._common_trsf,
                     ]
                 ),
@@ -266,11 +265,15 @@ class MultiAugmentedDummyDataset(DummyDataset):
 
     def __getitem__(self, logic_idx):
         ttrsf = self.trsf
+
+        logging.info("Trsf idx:{},{}".format(self.addition_trsf, logic_idx))
+
         if logic_idx/self.origin_dataset_size > 0:
             trsf_idx = int(logic_idx/self.origin_dataset_size) - 1
             ttrsf = self.addition_trsf[trsf_idx]
 
         idx = logic_idx % self.origin_dataset_size
+
         if self.use_path:
             image = ttrsf(pil_loader(self.images[idx]))
         else:
