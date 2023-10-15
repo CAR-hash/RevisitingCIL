@@ -29,7 +29,7 @@ class DataManager(object):
         return len(self._class_order)
 
     def get_dataset(
-        self, indices, source, mode, appendent=None, ret_data=False, m_rate=None
+        self, indices, source, mode, appendent=None, ret_data=False, m_rate=None, m_enable_trsf = False
     ):
         if source == "train":
             x, y = self._train_data, self._train_targets
@@ -42,14 +42,6 @@ class DataManager(object):
 
         if mode == "train":
             trsf = transforms.Compose([*self._train_trsf, *self._common_trsf])
-            ttrsf = [
-                transforms.Compose(
-                    [
-                        *self._test_trsf,
-                        *self._common_trsf,
-                    ]
-                ),
-            ]
         elif mode == "flip":
             trsf = transforms.Compose(
                 [
@@ -62,6 +54,30 @@ class DataManager(object):
             trsf = transforms.Compose([*self._test_trsf, *self._common_trsf])
         else:
             raise ValueError("Unknown mode {}.".format(mode))
+
+        if m_enable_trsf:
+            if mode == 'train':
+                ttrsf = [
+                    transforms.Compose(
+                        [
+                            *self._train_trsf,
+                            transforms.RandomHorizontalFlip(p=1.0),
+                            *self._common_trsf,
+                        ]
+                    )
+                ]
+            else:
+                ttrsf = [
+                    transforms.Compose(
+                        [
+                            *self._test_trsf,
+                            transforms.RandomHorizontalFlip(p=1.0),
+                            *self._common_trsf,
+                        ]
+                    )
+                ]
+
+
 
         data, targets = [], []
         for idx in indices:
@@ -83,7 +99,7 @@ class DataManager(object):
 
         data, targets = np.concatenate(data), np.concatenate(targets)
 
-        if mode == "train":
+        if m_enable_trsf:
             if ret_data:
                 return data, targets, MultiAugmentedDummyDataset(data, targets, trsf, ttrsf, self.use_path)
             else:
