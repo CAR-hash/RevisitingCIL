@@ -7,7 +7,7 @@ from tqdm import tqdm
 from torch import optim
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
-from utils.inc_net import IncrementalNet,SimpleCosineIncrementalNet,SimpleVitNet
+from utils.inc_net import IncrementalNet, SimpleCosineIncrementalNet, SimpleVitNet
 from models.base import BaseLearner
 from utils.toolkit import target2onehot, tensor2numpy
 from torchvision.transforms import transforms
