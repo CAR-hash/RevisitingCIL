@@ -20,12 +20,6 @@ class Learner(BaseLearner):
         super().__init__(args)
         self._network = SimpleVitNet(args, True)
         self.args=args
-        self._trsf = transforms.Compose(
-            [
-                #transforms.ColorJitter(brightness=(0.9, 1.1), saturation=(0.9, 1.1))
-            ]
-        )
-
     def after_task(self):
         self._known_classes = self._total_classes
     
@@ -62,7 +56,7 @@ class Learner(BaseLearner):
         self._network.update_fc(self._total_classes)
         logging.info("Learning on {}-{}".format(self._known_classes, self._total_classes))
 
-        train_dataset = data_manager.get_dataset(np.arange(self._known_classes, self._total_classes),source="train", mode="train", m_enable_trsf=True, m_augmentation_trsf=self._trsf)
+        train_dataset = data_manager.get_dataset(np.arange(self._known_classes, self._total_classes),source="train", mode="train")
 
         self.train_dataset = train_dataset
 
@@ -71,7 +65,7 @@ class Learner(BaseLearner):
         test_dataset = data_manager.get_dataset(np.arange(0, self._total_classes), source="test", mode="test" )
         self.test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
-        train_dataset_for_protonet=data_manager.get_dataset(np.arange(self._known_classes, self._total_classes),source="train", mode="train", m_enable_trsf=True, m_augmentation_trsf=self._trsf)
+        train_dataset_for_protonet=data_manager.get_dataset(np.arange(self._known_classes, self._total_classes),source="train", mode="train")
         self.train_loader_for_protonet = DataLoader(train_dataset_for_protonet, batch_size=batch_size, shuffle=True, num_workers=num_workers)
 
         if len(self._multiple_gpus) > 1:

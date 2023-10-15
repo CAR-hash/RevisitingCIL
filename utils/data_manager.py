@@ -73,15 +73,6 @@ class DataManager(object):
 
         data, targets = np.concatenate(data), np.concatenate(targets)
 
-        '''
-        if m_enable_trsf:
-            if ret_data:
-                return SingleAugmentedDummyDataset(data, targets, trsf, m_augmentation_trsf, self.use_path)
-            else:
-                return SingleAugmentedDummyDataset(data, targets, trsf, m_augmentation_trsf, self.use_path)
-                #return DummyDataset(data, targets, trsf, self.use_path)
-        else:
-        '''
         if ret_data:
             return data, targets, DummyDataset(data, targets, trsf, self.use_path)
         else:
