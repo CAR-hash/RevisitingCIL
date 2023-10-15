@@ -106,8 +106,8 @@ class Learner(BaseLearner):
             self._network = self._network.module
 
     def _train(self, train_loader, test_loader, train_loader_for_protonet):
-        self._init_lora()
-        lora.mark_only_lora_as_trainable(self._network)
+        if self._cur_task == 0:
+            self._init_lora()
         self._network.to(self._device)
         if self._cur_task == 0:
             if self.args['optimizer'] == 'sgd':
