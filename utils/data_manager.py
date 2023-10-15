@@ -38,6 +38,7 @@ class DataManager(object):
         else:
             raise ValueError("Unknown data source {}.".format(source))
 
+
         if mode == "train":
             trsf = transforms.Compose([*self._train_trsf, *self._common_trsf])
             ttrsf = transforms.Compose(
@@ -55,8 +56,10 @@ class DataManager(object):
                     *self._common_trsf,
                 ]
             )
+            ttrsf = trsf
         elif mode == "test":
             trsf = transforms.Compose([*self._test_trsf, *self._common_trsf])
+            ttrsf = trsf
         else:
             raise ValueError("Unknown mode {}.".format(mode))
 
@@ -81,9 +84,9 @@ class DataManager(object):
         data, targets = np.concatenate(data), np.concatenate(targets)
 
         if ret_data:
-            return data, targets, AugmentedDummyDataset(data, targets, trsf, self.use_path)
+            return data, targets, AugmentedDummyDataset(data, targets, trsf, ttrsf, self.use_path)
         else:
-            return AugmentedDummyDataset(data, targets, trsf, self.use_path)
+            return AugmentedDummyDataset(data, targets, trsf, ttrsf, self.use_path)
 
     def get_dataset_with_split(
         self, indices, source, mode, appendent=None, val_samples_per_class=0
@@ -220,7 +223,7 @@ class AugmentedDummyDataset(DummyDataset):
         self.images = images
         self.labels = np.append(labels, labels)
         self.trsf = trsf
-        self.addition_trsf = transforms.Compose([trsf, addition_trsf])
+        self.addition_trsf = addition_trsf
         self.use_path = use_path
         self.dataset_size = len(images)*2
         self.origin_dataset_size = len(images)
