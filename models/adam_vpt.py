@@ -93,10 +93,7 @@ class Learner(BaseLearner):
     def _train(self, train_loader, test_loader, train_loader_for_protonet):
         
         self._network.to(self._device)
-        
-        
         if self._cur_task == 0:
-
             # Freeze the parameters for ViT.
             total_params = sum(p.numel() for p in self._network.parameters())
             print(f'{total_params:,} total parameters.')

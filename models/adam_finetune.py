@@ -11,9 +11,16 @@ from utils.inc_net import IncrementalNet,SimpleCosineIncrementalNet,MultiBranchC
 from models.base import BaseLearner
 from utils.toolkit import target2onehot, tensor2numpy
 from timm.scheduler import create_scheduler
+from torchvision.transforms import transforms
 
 # fully finetune the model at first session, and then conduct simplecil.
 num_workers = 8
+
+class FocalLoss(nn.Module):
+    def __init__(self):
+        return
+    def forward(self,x, y):
+        return
 
 class Learner(BaseLearner):
     def __init__(self, args):
@@ -31,11 +38,17 @@ class Learner(BaseLearner):
         self.min_lr=args['min_lr'] if args['min_lr'] is not None else 1e-8
         self.args=args
 
+        self._trsf = transforms.Compose(
+            [
+                #transforms.ColorJitter(brightness=(0.9, 1.1), saturation=(0.9, 1.1))
+                transforms.RandomHorizontalFlip(p=0.5)
+            ]
+        )
+
     def after_task(self):
         self._known_classes = self._total_classes
     
     def replace_fc(self,trainloader, model, args):
-        
         model = model.eval()
         embedding_list = []
         label_list = []
@@ -67,14 +80,16 @@ class Learner(BaseLearner):
         self._network.update_fc(self._total_classes)
         logging.info("Learning on {}-{}".format(self._known_classes, self._total_classes))
 
-        train_dataset = data_manager.get_dataset(np.arange(self._known_classes, self._total_classes),source="train", mode="train", )
-        self.train_dataset=train_dataset
+        train_dataset = data_manager.get_dataset(np.arange(self._known_classes, self._total_classes),source="train", mode="train", m_enable_trsf=True, m_augmentation_trsf=self._trsf)
+
+        self.train_dataset = train_dataset
+
         self.data_manager=data_manager
         self.train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=num_workers)
         test_dataset = data_manager.get_dataset(np.arange(0, self._total_classes), source="test", mode="test" )
         self.test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=num_workers)
 
-        train_dataset_for_protonet=data_manager.get_dataset(np.arange(self._known_classes, self._total_classes),source="train", mode="test", )
+        train_dataset_for_protonet=data_manager.get_dataset(np.arange(self._known_classes, self._total_classes),source="train", mode="train", m_enable_trsf=True, m_augmentation_trsf=self._trsf)
         self.train_loader_for_protonet = DataLoader(train_dataset_for_protonet, batch_size=self.batch_size, shuffle=True, num_workers=num_workers)
 
         if len(self._multiple_gpus) > 1:
@@ -85,7 +100,6 @@ class Learner(BaseLearner):
             self._network = self._network.module
 
     def _train(self, train_loader, test_loader, train_loader_for_protonet):
-        
         self._network.to(self._device)
         if self._cur_task == 0:
             if self.args['optimizer']=='sgd':
@@ -95,6 +109,7 @@ class Learner(BaseLearner):
             scheduler=optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.args['tuned_epoch'], eta_min=self.min_lr)
             self._init_train(train_loader, test_loader, optimizer, scheduler)
             self.construct_dual_branch_network()
+            logging.info("Network constructed.")
         else:
             pass
         self.replace_fc(train_loader_for_protonet, self._network, None)
@@ -107,6 +122,7 @@ class Learner(BaseLearner):
 
     def _init_train(self, train_loader, test_loader, optimizer, scheduler):
         prog_bar = tqdm(range(self.args['tuned_epoch']))
+        info = "Task..."
         for _, epoch in enumerate(prog_bar):
             self._network.train()
             losses = 0.0
@@ -115,7 +131,7 @@ class Learner(BaseLearner):
                 inputs, targets = inputs.to(self._device), targets.to(self._device)
                 logits = self._network(inputs)["logits"]
 
-                loss = F.cross_entropy(logits, targets)
+                loss = F.cross_entropy(logits, targets) * 2
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()

@@ -53,9 +53,6 @@ class DataManager(object):
         else:
             raise ValueError("Unknown mode {}.".format(mode))
 
-        if m_enable_trsf:
-            trsf = transforms.Compose([trsf, m_augmentation_trsf])
-
         data, targets = [], []
         for idx in indices:
             if m_rate is None:
@@ -76,10 +73,17 @@ class DataManager(object):
 
         data, targets = np.concatenate(data), np.concatenate(targets)
 
-        if ret_data:
-            return data, targets, DummyDataset(data, targets, trsf, self.use_path)
+        if m_enable_trsf:
+            if ret_data:
+                return data, targets, DummyDataset(data, targets, trsf, self.use_path)
+            else:
+                #return SingleAugmentedDummyDataset(data, targets, trsf, m_augmentation_trsf, self.use_path)
+                return DummyDataset(data, targets, trsf, self.use_path)
         else:
-            return DummyDataset(data, targets, trsf, self.use_path)
+            if ret_data:
+                return data, targets, DummyDataset(data, targets, trsf, self.use_path)
+            else:
+                return DummyDataset(data, targets, trsf, self.use_path)
 
     def get_dataset_with_split(
         self, indices, source, mode, appendent=None, val_samples_per_class=0
@@ -209,6 +213,92 @@ class DummyDataset(Dataset):
 
         return idx, image, label
 
+class AugmentedDummyDataset(DummyDataset):
+    def __init__(self, images, labels, trsf, addition_trsf, use_path=False):
+        super().__init__(images, labels, trsf, use_path)
+        assert len(images) == len(labels), "Data size error!"
+        self.images = images
+        self.labels = np.append(labels, labels)
+        self.trsf = trsf
+        self.addition_trsf = transforms.Compose([trsf, addition_trsf])
+        self.use_path = use_path
+        self.dataset_size = len(images)*2
+        self.origin_data_size = len(images)
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, logic_idx):
+        ttrsf = self.trsf
+        if logic_idx/self.dataset_size > 0:
+            ttrsf = self.addition_trsf
+        idx = logic_idx % self.dataset_size
+
+        if self.use_path:
+            image = ttrsf(pil_loader(self.images[idx]))
+        else:
+            image = ttrsf(Image.fromarray(self.images[idx]))
+
+        label = self.labels[idx]
+
+        return logic_idx, image, label
+
+class MultiAugmentedDummyDataset(DummyDataset):
+    def __init__(self, images, labels, trsf, addition_trsf, use_path=False):
+        super().__init__(images, labels, trsf, use_path)
+        assert len(images) == len(labels), "Data size error!"
+        self.images = images
+        self.labels = labels
+        for i in range(0, len(addition_trsf)):
+            self.labels = np.append(self.labels, labels)
+        self.trsf = trsf
+        self.addition_trsf = addition_trsf
+        self.use_path = use_path
+        self.dataset_size = len(images)
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, logic_idx):
+        ttrsf = self.trsf
+        if logic_idx/self.dataset_size > 0:
+            ttrsf = transforms.Compose([
+                ttrsf,
+                self.addition_trsf[logic_idx/self.dataset_size]
+            ])
+        idx = logic_idx % self.dataset_size
+        if self.use_path:
+            image = ttrsf(pil_loader(self.images[idx]))
+        else:
+            image = ttrsf(Image.fromarray(self.images[idx]))
+
+        label = self.labels[idx]
+
+        return logic_idx, image, label
+
+class SingleAugmentedDummyDataset(DummyDataset):
+    def __init__(self, images, labels, trsf, addition_trsf, use_path=False):
+        super().__init__(images, labels, trsf, use_path)
+        assert len(images) == len(labels), "Data size error!"
+        self.images = images
+        self.labels = labels
+        self.trsf = trsf
+        self.addition_trsf = transforms.Compose([trsf, addition_trsf])
+        self.use_path = use_path
+        self.dataset_size = len(images)
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, logic_idx):
+        if self.use_path:
+            image = self.addition_trsf(pil_loader(self.images[logic_idx]))
+        else:
+            image = self.addition_trsf(Image.fromarray(self.images[logic_idx]))
+
+        label = self.labels[logic_idx]
+
+        return logic_idx, image, label
 
 def _map_new_class_index(y, order):
     return np.array(list(map(lambda x: order.index(x), y)))
