@@ -273,6 +273,7 @@ class MultiAugmentedDummyDataset(DummyDataset):
         nttrsf = self.trsf
         if logic_idx >= self.origin_dataset_size:
             trsf_idx = int(logic_idx/self.origin_dataset_size)
+            trsf_idx = trsf_idx - 1
             nttrsf = self.ttrsf[trsf_idx]
         idx = logic_idx % self.origin_dataset_size
         if self.use_path:
