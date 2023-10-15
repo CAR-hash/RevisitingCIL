@@ -73,6 +73,7 @@ class DataManager(object):
 
         data, targets = np.concatenate(data), np.concatenate(targets)
 
+        '''
         if m_enable_trsf:
             if ret_data:
                 return SingleAugmentedDummyDataset(data, targets, trsf, m_augmentation_trsf, self.use_path)
@@ -80,10 +81,11 @@ class DataManager(object):
                 return SingleAugmentedDummyDataset(data, targets, trsf, m_augmentation_trsf, self.use_path)
                 #return DummyDataset(data, targets, trsf, self.use_path)
         else:
-            if ret_data:
-                return data, targets, DummyDataset(data, targets, trsf, self.use_path)
-            else:
-                return DummyDataset(data, targets, trsf, self.use_path)
+        '''
+        if ret_data:
+            return data, targets, DummyDataset(data, targets, trsf, self.use_path)
+        else:
+            return DummyDataset(data, targets, trsf, self.use_path)
 
     def get_dataset_with_split(
         self, indices, source, mode, appendent=None, val_samples_per_class=0
