@@ -235,7 +235,7 @@ class AugmentedDummyDataset(DummyDataset):
         self.origin_dataset_size = len(images)
 
     def __len__(self):
-        return len(self.images)
+        return len(self.images) * 2
 
     def __getitem__(self, logic_idx):
         ttrsf = self.trsf
