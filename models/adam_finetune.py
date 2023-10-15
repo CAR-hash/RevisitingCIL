@@ -12,6 +12,7 @@ from models.base import BaseLearner
 from utils.toolkit import target2onehot, tensor2numpy
 from timm.scheduler import create_scheduler
 from torchvision.transforms import transforms
+import loralib as lora
 
 # fully finetune the model at first session, and then conduct simplecil.
 num_workers = 8
@@ -100,6 +101,8 @@ class Learner(BaseLearner):
             self._network = self._network.module
 
     def _train(self, train_loader, test_loader, train_loader_for_protonet):
+        self._init_lora()
+        lora.mark_only_lora_as_trainable(self._network)
         self._network.to(self._device)
         if self._cur_task == 0:
             if self.args['optimizer']=='sgd':
@@ -119,6 +122,19 @@ class Learner(BaseLearner):
         network = MultiBranchCosineIncrementalNet(self.args, True)
         network.construct_dual_branch_network(self._network)
         self._network=network.to(self._device)
+
+    def _init_lora(self):
+        linears = [k for k, m in self._network.named_modules() if type(m).__name__ == 'Linear']
+        for linear in linears:
+            in_feat = self._network.get_submodule(linear).in_features
+            out_feat = self._network.get_submodule(linear).in_features
+            l_linear = lora.Linear(in_feat, out_feat)
+            tokens = linear.split('.')
+            sub_tokens = tokens[:-1]
+            cur_module = self._network
+            for t in sub_tokens:
+                cur_module = getattr(cur_module, t)
+            setattr(cur_module, tokens[-1], l_linear)
 
     def _init_train(self, train_loader, test_loader, optimizer, scheduler):
         prog_bar = tqdm(range(self.args['tuned_epoch']))
