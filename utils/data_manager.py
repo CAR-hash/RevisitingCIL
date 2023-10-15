@@ -265,20 +265,15 @@ class MultiAugmentedDummyDataset(DummyDataset):
 
     def __getitem__(self, logic_idx):
         ttrsf = self.trsf
-
-        if (logic_idx - logic_idx%self.origin_dataset_size) > 0:
+        if logic_idx >= self.origin_dataset_size:
             trsf_idx = int(logic_idx/self.origin_dataset_size)
             ttrsf = self.addition_trsf[trsf_idx]
-
         idx = logic_idx % self.origin_dataset_size
-
         if self.use_path:
             image = ttrsf(pil_loader(self.images[idx]))
         else:
             image = ttrsf(Image.fromarray(self.images[idx]))
-
         label = self.labels[idx]
-
         return logic_idx, image, label
 
 class SingleAugmentedDummyDataset(DummyDataset):
