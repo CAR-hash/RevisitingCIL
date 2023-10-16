@@ -1,6 +1,7 @@
 import copy
 import logging
 import torch
+from peft import LoraConfig, get_peft_model
 from torch import nn
 from convs.linears import SimpleLinear, SplitCosineLinear, CosineLinear
 import timm
@@ -528,7 +529,28 @@ class SimpleCosineIncrementalNet(BaseNet):
 class SimpleVitNet(BaseNet):
     def __init__(self, args, pretrained):
         super().__init__(args, pretrained)
-
+    def apply_lora(self):
+        lora_config = LoraConfig(
+            r=1,
+            lora_alpha=1,
+            target_modules=['fc1', 'qkv']
+        )
+        '''
+        linears = [k for k, m in self._network.named_modules() if type(m).__name__ == 'Linear']
+        for i in range(0, len(linears)):
+            linear = linears[i]
+            in_feat = self._network.get_submodule(linear).in_features
+            out_feat = self._network.get_submodule(linear).out_features
+            l_linear = lora.Linear(in_feat, out_feat, r=16)
+            tokens = linear.split('.')
+            sub_tokens = tokens[:-1]
+            cur_module = self._network
+            for t in sub_tokens:
+                cur_module = getattr(cur_module, t)
+            setattr(cur_module, tokens[-1], l_linear)
+        '''
+        self.convnet = get_peft_model(self.convnet, lora_config)
+        pass
     def update_fc(self, nb_classes, nextperiod_initialization=None):
         fc = self.generate_fc(self.feature_dim, nb_classes).cuda()
         if self.fc is not None:

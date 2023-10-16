@@ -28,6 +28,7 @@ class Learner(BaseLearner):
             self.init_lr = args["init_lr"] if args["init_lr"] is not None else 0.01
         else:
             self._network = SimpleVitNet(args, True)
+            self._network.apply_lora()
             self.batch_size = args["batch_size"]
             self.init_lr = args["init_lr"]
 
@@ -100,8 +101,6 @@ class Learner(BaseLearner):
             self._network = self._network.module
 
     def _train(self, train_loader, test_loader, train_loader_for_protonet):
-        if self._cur_task == 0:
-            self._init_lora()
         self._network.to(self._device)
         if self._cur_task == 0:
             if self.args['optimizer'] == 'sgd':
@@ -144,7 +143,6 @@ class Learner(BaseLearner):
             setattr(cur_module, tokens[-1], l_linear)
         '''
         self._network = get_peft_model(self._network, lora_config)
-        logging.info(self._network.print_trainable_parameters())
 
     def _init_train(self, train_loader, test_loader, optimizer, scheduler):
         prog_bar = tqdm(range(self.args['tuned_epoch']))
