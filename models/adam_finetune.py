@@ -127,6 +127,7 @@ class Learner(BaseLearner):
         lora_config = LoraConfig(
             r=1,
             lora_alpha=1,
+            target_modules=["linear"]
         )
         '''
         linears = [k for k, m in self._network.named_modules() if type(m).__name__ == 'Linear']
@@ -143,6 +144,7 @@ class Learner(BaseLearner):
             setattr(cur_module, tokens[-1], l_linear)
         '''
         self._network = get_peft_model(self._network, lora_config)
+        logging.info(self._network.print_trainable_parameters())
 
     def _init_train(self, train_loader, test_loader, optimizer, scheduler):
         prog_bar = tqdm(range(self.args['tuned_epoch']))
