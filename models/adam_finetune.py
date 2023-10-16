@@ -94,7 +94,7 @@ class Learner(BaseLearner):
         self.test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=num_workers)
 
         train_dataset_for_protonet = data_manager.get_dataset(np.arange(self._known_classes, self._total_classes),
-                                                              source="train", mode="train")
+                                                              source="train", mode="test")
         self.train_loader_for_protonet = DataLoader(train_dataset_for_protonet, batch_size=self.batch_size,
                                                     shuffle=True, num_workers=num_workers)
 
@@ -131,7 +131,7 @@ class Learner(BaseLearner):
 
     def _init_lora(self):
         linears = [k for k, m in self._network.named_modules() if type(m).__name__ == 'Linear']
-        for i in range(0, 5):
+        for i in range(0, len(linears)):
             linear = linears[i]
             in_feat = self._network.get_submodule(linear).in_features
             out_feat = self._network.get_submodule(linear).out_features
