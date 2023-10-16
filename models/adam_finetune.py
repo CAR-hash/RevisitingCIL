@@ -127,9 +127,8 @@ class Learner(BaseLearner):
         lora_config = LoraConfig(
             r=1,
             lora_alpha=1,
-            target_modules=["linear"]
+            target_modules=['fc1', 'qkv']
         )
-        logging.info("Trainable parameters:{}".format(self._network))
         '''
         linears = [k for k, m in self._network.named_modules() if type(m).__name__ == 'Linear']
         for i in range(0, len(linears)):
