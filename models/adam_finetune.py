@@ -129,6 +129,7 @@ class Learner(BaseLearner):
             lora_alpha=1,
             target_modules=["linear"]
         )
+        logging.info("Trainable parameters:{}".format(self._network.print_trainable_parameters()))
         '''
         linears = [k for k, m in self._network.named_modules() if type(m).__name__ == 'Linear']
         for i in range(0, len(linears)):
