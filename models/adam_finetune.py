@@ -13,18 +13,10 @@ from utils.toolkit import target2onehot, tensor2numpy
 from timm.scheduler import create_scheduler
 from torchvision.transforms import transforms
 import loralib as lora
-from peft import  get_peft_config, get_peft_model, LoraConfig, TaskType
+from peft import get_peft_config, get_peft_model, LoraConfig, TaskType
+
 # fully finetune the model at first session, and then conduct simplecil.
 num_workers = 8
-
-
-class FocalLoss(nn.Module):
-    def __init__(self):
-        return
-
-    def forward(self, x, y):
-        return
-
 
 
 class Learner(BaseLearner):
@@ -42,12 +34,13 @@ class Learner(BaseLearner):
         self.weight_decay = args["weight_decay"] if args["weight_decay"] is not None else 0.0005
         self.min_lr = args['min_lr'] if args['min_lr'] is not None else 1e-8
         self.args = args
-
-        self._trsf = transforms.Compose(
-            [
-                # transforms.ColorJitter(brightness=(0.9, 1.1), saturation=(0.9, 1.1))
-                transforms.RandomHorizontalFlip(p=0.5)
-            ]
+        self.focal_loss = torch.hub.load(
+            'adeelh/pytorch-multi-class-focal-loss',
+            model='FocalLoss',
+            alpha=torch.tensor([.75, .25]),
+            gamma=2,
+            reduction='mean',
+            force_reload=False
         )
 
     def after_task(self):
@@ -162,7 +155,7 @@ class Learner(BaseLearner):
                 inputs, targets = inputs.to(self._device), targets.to(self._device)
                 logits = self._network(inputs)["logits"]
 
-                loss = F.cross_entropy(logits, targets) * 2
+                loss = self.focal_loss(logits, targets) #F.cross_entropy(logits, targets) * 2
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -196,9 +189,3 @@ class Learner(BaseLearner):
             prog_bar.set_description(info)
 
         logging.info(info)
-
-
-
-
-
-
