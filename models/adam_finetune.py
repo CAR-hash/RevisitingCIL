@@ -13,7 +13,7 @@ from utils.toolkit import target2onehot, tensor2numpy
 from timm.scheduler import create_scheduler
 from torchvision.transforms import transforms
 import loralib as lora
-
+from peft import  get_peft_config, get_peft_model, LoraConfig, TaskType
 # fully finetune the model at first session, and then conduct simplecil.
 num_workers = 8
 
@@ -24,6 +24,7 @@ class FocalLoss(nn.Module):
 
     def forward(self, x, y):
         return
+
 
 
 class Learner(BaseLearner):
@@ -130,6 +131,11 @@ class Learner(BaseLearner):
         self._network = network.to(self._device)
 
     def _init_lora(self):
+        lora_config = LoraConfig(
+            r=1,
+            lora_alpha=1,
+        )
+        '''
         linears = [k for k, m in self._network.named_modules() if type(m).__name__ == 'Linear']
         for i in range(0, len(linears)):
             linear = linears[i]
@@ -142,6 +148,8 @@ class Learner(BaseLearner):
             for t in sub_tokens:
                 cur_module = getattr(cur_module, t)
             setattr(cur_module, tokens[-1], l_linear)
+        '''
+        self._network = get_peft_model(self._network, lora_config)
 
     def _init_train(self, train_loader, test_loader, optimizer, scheduler):
         prog_bar = tqdm(range(self.args['tuned_epoch']))
