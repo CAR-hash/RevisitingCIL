@@ -124,7 +124,7 @@ class Learner(BaseLearner):
         self.weight_decay = args["weight_decay"] if args["weight_decay"] is not None else 0.0005
         self.min_lr = args['min_lr'] if args['min_lr'] is not None else 1e-8
         self.args = args
-        self.focal_loss = FocalLoss(alpha=None, gamma=2)
+        self.focal_loss = FocalLoss(alpha=None, gamma=0)
 
     def after_task(self):
         self._known_classes = self._total_classes
