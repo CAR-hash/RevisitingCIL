@@ -21,6 +21,7 @@ from peft import get_peft_config, get_peft_model, LoraConfig, TaskType
 # fully finetune the model at first session, and then conduct simplecil.
 num_workers = 8
 
+#code of FocalLoss is from https://github.com/AdeelH/pytorch-multi-class-focal-loss, an open-source repository with MIT license
 class FocalLoss(nn.Module):
     """ Focal Loss, as described in https://arxiv.org/abs/1708.02002.
 
@@ -160,17 +161,17 @@ class Learner(BaseLearner):
         logging.info("Learning on {}-{}".format(self._known_classes, self._total_classes))
 
         train_dataset = data_manager.get_dataset(np.arange(self._known_classes, self._total_classes), source="train",
-                                                 mode="train", m_enable_trsf=True)
+                                                 mode="train")
 
         self.train_dataset = train_dataset
 
         self.data_manager = data_manager
         self.train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=num_workers)
-        test_dataset = data_manager.get_dataset(np.arange(0, self._total_classes), source="test", mode="test", m_enable_trsf=True)
+        test_dataset = data_manager.get_dataset(np.arange(0, self._total_classes), source="test", mode="test")
         self.test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=num_workers)
 
         train_dataset_for_protonet = data_manager.get_dataset(np.arange(self._known_classes, self._total_classes),
-                                                              source="train", mode="test", m_enable_trsf=True)
+                                                              source="train", mode="test")
         self.train_loader_for_protonet = DataLoader(train_dataset_for_protonet, batch_size=self.batch_size,
                                                     shuffle=True, num_workers=num_workers)
 
