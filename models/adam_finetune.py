@@ -165,7 +165,6 @@ class Learner(BaseLearner):
                                                  mode="train")
 
         self.train_dataset = train_dataset
-
         self.data_manager = data_manager
         self.train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=num_workers)
         test_dataset = data_manager.get_dataset(np.arange(0, self._total_classes), source="test", mode="test")
