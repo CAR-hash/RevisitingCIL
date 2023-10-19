@@ -77,8 +77,7 @@ class DataManager(object):
                     )
                 ]
 
-
-
+        transforms.RandomResizedCrop()
         data, targets = [], []
         for idx in indices:
             if m_rate is None:
